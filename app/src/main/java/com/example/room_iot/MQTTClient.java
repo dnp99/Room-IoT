@@ -1,8 +1,8 @@
 package com.example.room_iot;
 
-
-import android.content.Context;
+import android.graphics.Color;
 import android.util.Log;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -17,15 +17,15 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import java.io.UnsupportedEncodingException;
 
-public class MQTTClient {
-    public void startMqtt(final Context context) {
-        final String serverUri = "tcp://m16.cloudmqtt.com:19194";
-        final String clientId = MqttClient.generateClientId();
-        final String topic = "room";
-        final String username = "lhqwiyin";
-        final String password = "rgaGo8vGawAR";
+public class MQTTClient  {
 
-        final MqttAndroidClient mqttAndroidClient = new MqttAndroidClient(context, serverUri, clientId);
+    final String username = "lhqwiyin";
+    final String password = "rgaGo8vGawAR";
+
+
+    //Call this method to connect to RPi
+    public void startMqtt(final MqttAndroidClient mqttAndroidClient, final String command, final TextView textView) {
+
         MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
         mqttConnectOptions.setAutomaticReconnect(true);
         mqttConnectOptions.setCleanSession(false);
@@ -38,30 +38,48 @@ public class MQTTClient {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
 
-                    try {
-                        Toast.makeText(context, "Connected", Toast.LENGTH_SHORT).show();
-                        publishMessage(mqttAndroidClient,"fanOff",0,topic);
-
-                    } catch (MqttException e) {
-                        e.printStackTrace();
-                    } catch (UnsupportedEncodingException e) {
-                        e.printStackTrace();
+                    switch (command){
+                        case "on": try {
+                                    publishMessage(mqttAndroidClient,"fanOn",0,"room");
+                                    textView.setText("Fan is On");
+                                    textView.setTextColor(Color.parseColor("#00574B"));
+                                    } catch (MqttException e) {
+                                    e.printStackTrace();
+                                    } catch (UnsupportedEncodingException e) {
+                                    e.printStackTrace();
+                                    }
+                                    break;
+                        case "off": try {
+                                    publishMessage(mqttAndroidClient,"fanOff",0,"room");
+                                    textView.setText("Fan is Off");
+                                    textView.setTextColor(Color.parseColor("#D81B60"));
+                                    } catch (MqttException e) {
+                                        e.printStackTrace();
+                                    } catch (UnsupportedEncodingException e) {
+                                        e.printStackTrace();
+                                    }
+                                    break;
+                        case "test":textView.setText("Connected to RPi");
+                                    break;
+                        default: MainActivity.MQTTstatus="Invalid Command";
                     }
+
+
                 }
 
                 @Override
                 public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    Log.w("Mqtt", "Failed to connect to: " + serverUri + exception.toString());
+                    textView.setText("Can not Connect. Error ->"+exception.toString());
+                    Log.w("Mqtt", "Failed to connect to: "  + exception.toString());
                 }
             });
-
-
         } catch (MqttException ex){
             ex.printStackTrace();
         }
 
     }
 
+    //Call this method to send message to RPi
     public void publishMessage(@NonNull MqttAndroidClient client,
                                @NonNull String msg, int qos, @NonNull String topic)
             throws MqttException, UnsupportedEncodingException {
